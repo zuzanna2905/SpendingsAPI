@@ -1,8 +1,9 @@
 const getSpendings = (db) => (req,res) => {
+    const { start, end, account } = req.query;
     db.select('*')
     .from('spendings')
-    .innerJoin('categories', 'spendings.category', '=', 'categories.id')
-    .leftJoin('accounts', 'spendings.account', '=', 'accounts.id')
+    .whereBetween('date', [start, end])
+    .orderBy('date', 'desc')
     .then(spendings => res.status(200).json(spendings))
     .catch(err => res.status(400).json(err, ':', 'unable to get data'))
 }
@@ -23,7 +24,7 @@ const addSpending = (db) => (req,res) => {
           value:value, 
           account:account, 
           description:description,
-          date:date
+          date:new Date(date).toISOString(),
         })
     .into('spendings')
     .then(a => res.status(200).json('new spending added'))
@@ -54,10 +55,19 @@ const updateSpending = (db) => (req,res) => {
     .catch(err => res.status(400).json(err, ':', 'unable to get data'))
 }
 
+const getColumns = (db) => (req, res) => {
+    db.select('column_name','data_type')
+    .from('information_schema.columns')
+    .where('table_name', '=', 'spendings')
+    .where('column_name', '!=', 'id')
+    .then(columns => res.status(200).json(columns))
+}
+
 module.exports = {
     getSpendings: getSpendings,
     getSpending: getSpending,
     addSpending: addSpending,
     deleteSpending: deleteSpending,
-    updateSpending: updateSpending
+    updateSpending: updateSpending,
+    getColumns: getColumns
 }
